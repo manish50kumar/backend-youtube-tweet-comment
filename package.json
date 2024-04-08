@@ -1,0 +1,27 @@
+{
+  "name": "backend-youtube-tweet-comment",
+  "version": "1.0.0",
+  "description": "backend for youtube tweet and comments type web development",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manish50kumar/backend-youtube-tweet-comment.git"
+  },
+  "keywords": [
+    "node",
+    "js",
+    "cloudinary",
+    "postman",
+    "multer",
+    "etc"
+  ],
+  "author": "Manish Kumar",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/manish50kumar/backend-youtube-tweet-comment/issues"
+  },
+  "homepage": "https://github.com/manish50kumar/backend-youtube-tweet-comment#readme"
+}

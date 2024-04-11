@@ -1,6 +1,6 @@
 import mongoose from mongoose
 
-const tweetSchema = mongoose.Schema(
+const tweetSchema = new mongoose.Schema(
     {
         content: {
             type: String,
@@ -8,7 +8,8 @@ const tweetSchema = mongoose.Schema(
         },
         owner: {
             type: mongoose.Schema.Types.ObjectId,
-            ref:"User"
+            ref: "User",
+            required:true
         }
     },
     { timestamps: true }

@@ -13,7 +13,7 @@ const uploadOnCloudinary = async (localFilePath) => {
     try {
         if (!localFilePath) return null;
         // upload file on cloudinary
-        const response = cloudinary.uploader.upload(localFilePath, {
+        const response = await cloudinary.uploader.upload(localFilePath, {
             resource_type: auto
         })
         // file successful upload on cloud
@@ -24,9 +24,33 @@ const uploadOnCloudinary = async (localFilePath) => {
         return response;
 
     } catch (error) {
-        console.log("Error in upload data to cloudinary : ", error);
+        console.log("Error in upload file to cloudinary : ", error);
         fs.unlinkSync(localFilePath); // delete file from local file
         return null;
     }
 }
 
+const deleteFileFromCloudinary = async (url,isVideo) => {
+    try {
+        if (!url) {
+            console.log("Url is compulsory for delete a file from cloudinary.");
+            return;
+        } 
+        // find public id from the url it is a name of file
+        const public_Id = url.split('/').pop().split('.')[0];
+        // check resource type
+        const resourceType = isVideo ? 'video' : 'image';
+        // delete from cloudinary
+        await cloudinary.uploader.destroy(public_Id, {
+            resource_type: resourceType
+        });
+        // successfull delete file from cloudinary
+        console.log(`File delete from cloudinary it's url ${url}`);
+    } catch (error) {
+        console.log("Error while upload file on cloudinary : ", error.message);
+        return;
+    }
+}
+
+
+export {uploadOnCloudinary,deleteFileFromCloudinary}

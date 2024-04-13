@@ -30,6 +30,9 @@ const userSchema = new Schema({
         required: true,
         trim:true
     },
+    gender: {
+        type: String,        
+    },
     avatar: {
         type: String, // cloudinary url
         required:true

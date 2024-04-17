@@ -3,7 +3,21 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js"
 
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+
+// function for generate access and refresh token 
+const generateAccessAndRefreshToken = async(userId) =>{
+    try {
+        const user = await User.findById(userId);
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
+        user.refreshToken = refreshToken;
+        await user.save({ validateBeforeSave: false });
+        return { accessToken, refreshToken };
+    } catch (error) {
+        throw new ApiError(500, "something went wrong while generating access and refresh Tokens");
+    }
+}
 
 const registerUser = asyncHandler(async (req, res, next) => {
     // get user details from backend
@@ -17,7 +31,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
     // remove password and refresh token from response data
 
     // get userDetails from frontend
-    const [username, email, password, fullName, gender] = req.body;
+    const { username, email, password, fullName, gender } = req.body;
     
     //Validate and check required field is not empty
     if (!username || !email || !password || !fullName) {
@@ -104,8 +118,61 @@ const loginUser = asyncHandler(async (req, res) => {
     // generate acessToken and refresh token
     // set both token in cookie while return response
     
+    // get user details from frontend
+    const { username, email, password } = req.body;
+    // validate details
+    if (!username && !email) {
+        console.log("Username or email required");
+        throw new ApiError(400, "username or email required for login");
+    }
+    if (!password) {
+        console.log(400, "password required for login");
+        throw new ApiError(400, "password reuired for login");
+    }
+    // find user exist or not
+    const user = await findOne({
+        $or: [{ email }, { username }],
+    });
+    if (!user) {
+        console.log("User does not exist");
+        throw new ApiError(400, "User does not exist.");
+    }
+    // match password
+    const isValidPassword = await user.isPasswordCorrect(password);
+    if (!isValidPassword) {
+        console.log("Invalid user credentials.(password not match.)");
+        throw new ApiError(401, "Invalid user credentials");
+    }
+    //generate access token and refresh token
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+    // get login user data for response without password and refresh token
+    const loggedInUser = await User.findById(user._id).select(
+        "-password -refreshToken"
+    );
+    
+    // for set cookie create an option with http and secure
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
 
-
-})
+    //return response and set cookie with access token and refresh token
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    user: loggedInUser,
+                    accessToken,
+                    refreshToken
+                },
+                "User Logged In Successfully"
+                
+            )
+        );
+});
 
 export { registerUser };

@@ -38,7 +38,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
         console.log("All fields are required..");
         throw new ApiError(400, "All fields are required");
     }
-    if (!Boolean(username.match(/[A-Z]/))) {
+    if (Boolean(username.match(/[A-Z]/))) {
         console.log("In Username uppercase letter exits");
         throw new ApiError(401, "username can not contain uppercase letter");
     }
@@ -55,7 +55,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
         throw new ApiError(401, "Email already exists please use another email");
     }
     // find local path of avatar image on cloudnary
-    const avatarLocalPath = req.files?.avatar && req.files?.avater[0]?.path;
+    const avatarLocalPath = req.files?.avatar || req.files?.avatar[0]?.path;
     if (!avatarLocalPath) {
         console.log("Avatar image required");
         throw new ApiError(400, "Avatar Image required");
@@ -67,26 +67,28 @@ const registerUser = asyncHandler(async (req, res, next) => {
         Array.isArray(req.files.coverImage) &&
         req.files.coverImage.length > 0
     ) {
-        coverImageLocalPath = req.files.coverImage[0].path;
+        // coverImageLocalPath = req.files.coverImage[0].path;
+        coverImageLocalPath = req.files.coverImage;
     }
     // upload avatar and cover image on cloudinary
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    const avatar = await uploadOnCloudinary(avatarLocalPath,process.env.FOLDER_NAME);
     let coverImage = "";
     if (coverImageLocalPath) {
-        coverImage = await uploadOnCloudinary(coverImageLocalPath);
+        coverImage = await uploadOnCloudinary(coverImageLocalPath,process.env.FOLDER_NAME);
     }
     if (!avatar) {
         console.log("Avatar Link required . Avatar has not uploaded on cloudinary.");
         throw new ApiError(400, "Avatar link requird. Avatar has not uploaded on cloudinary.");
     }
     // create user for upload on mongoDB model
+    
     const user = await User.create({
         username: username.toLowerCase(),
         email,
         password,  // this is hash in model pre save functionality
         fullName,
         gender: gender || "",
-        avater: avater.secure_url,
+        avatar: avatar.secure_url,
         coverImage: coverImage?.secure_url || "",
     });
     if (!user) {

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { upload } from "../middlewares/multer.js";
-import { vefifyJWT } from "../middlewares/auth.js";
+import { verifyJWT } from "../middlewares/auth.js";
 
 import {
     registerUser,

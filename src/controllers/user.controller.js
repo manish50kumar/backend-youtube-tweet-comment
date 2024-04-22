@@ -31,6 +31,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
     // remove password and refresh token from response data
 
     // get userDetails from frontend
+    console.log("req : ", req.body);
     const { username, email, password, fullName, gender } = req.body;
     
     //Validate and check required field is not empty
@@ -121,7 +122,16 @@ const loginUser = asyncHandler(async (req, res) => {
     // set both token in cookie while return response
     
     // get user details from frontend
+    // const { username, email, password } = req.body;
+    console.log("req ; ", req.body);
     const { username, email, password } = req.body;
+    
+    // const username = req.body.username;
+    // const email = req.body.email;
+    // const password = req.body.password;
+    console.log("Username : ", username);
+    console.log("Email : ", email);
+    console.log("Pass : ", password);
     // validate details
     if (!username && !email) {
         console.log("Username or email required");
@@ -132,7 +142,7 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "password reuired for login");
     }
     // find user exist or not
-    const user = await findOne({
+    const user = await User.findOne({
         $or: [{ email }, { username }],
     });
     if (!user) {
@@ -177,4 +187,4 @@ const loginUser = asyncHandler(async (req, res) => {
         );
 });
 
-export { registerUser,loginUser };
+export { registerUser, loginUser };

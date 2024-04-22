@@ -22,6 +22,13 @@ router.post(
         }
     ]),
     registerUser
+)
+
+// send data in row & json formet
+router.post(
+    '/login',
+    
+    loginUser
 );
 
 export default router;

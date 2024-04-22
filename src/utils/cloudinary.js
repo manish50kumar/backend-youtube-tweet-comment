@@ -12,7 +12,7 @@ cloudinary.config({
 
 // upload image or video
 const uploadOnCloudinary = async (localFilePath,folder) => {
-    console.log("Local Path  : ", localFilePath)
+    // console.log("Local Path  : ", localFilePath)
     const path = localFilePath[0]?.path;
     try {     
 

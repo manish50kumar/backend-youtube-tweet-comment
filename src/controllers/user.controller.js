@@ -187,4 +187,37 @@ const loginUser = asyncHandler(async (req, res) => {
         );
 });
 
-export { registerUser, loginUser };
+const logoutUser = asyncHandler(async (req, res) => {
+    // check user authenticaton
+    // delete cookie of refresh token and access token
+    // delete refreshToken from database
+    // return response
+    const userId = req.user._id;
+    const updateUser = await User.findByIdAndUpdate(
+        userId,
+        {
+            $unset: { refreshToken: 1 },
+        },
+        {
+            new: true
+        }
+    );
+    if (!updateUser) {
+        console.log("Logout not successfull ");
+        throw new ApiError(401, "Logout not successfull");
+    }
+    const options = {
+        httpOnly: true,
+        secure: true
+    };
+
+    return res
+        .status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(
+            new ApiResponse(200, null, "User Logout Successfull")
+        )
+});
+
+export { registerUser, loginUser,logoutUser };

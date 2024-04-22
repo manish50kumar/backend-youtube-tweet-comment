@@ -4,7 +4,8 @@ import { verifyJWT } from "../middlewares/auth.js";
 
 import {
     registerUser,
-    loginUser
+    loginUser,
+    logoutUser
 } from "../controllers/user.controller.js";
 
 const router = Router();
@@ -30,5 +31,8 @@ router.post(
     
     loginUser
 );
+
+// logout user jwtauth then logout
+router.post("/logout", verifyJWT, logoutUser);
 
 export default router;

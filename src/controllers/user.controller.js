@@ -343,6 +343,47 @@ const getCurrentUser = asyncHandler(async (req, res) => {
         )
 })
 
+const updateAccountDetails = asyncHandler(async (req, res) => {
+    // TODO
+    //get update fiels from body
+    // get user from auth
+    // update fields
+    // return response successfull
+
+    // get user from auth
+    const userId = req.user?._id;
+    // get data from body
+    const { fullName, email, gender } = req.body;
+    // validate data
+    if (!fullName || !email || !gender) {
+        console.log("All fields are required");
+        throw new ApiError(402, "All fields are required");
+    }
+    // find and update data
+    const user = await User.findByIdAndUpdate(
+        userId,
+        {
+            $set: {
+                fullName,
+                email,
+                gender
+            }
+        },
+        { new: true }
+    ).selecte("-password");
+    // check user update or not 
+    if (!user) {
+        console.log("Something went wrong while updating details");
+        throw new ApiError(500, "Something went wrong whils updating details");
+    }
+    // return response
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, user, "Update details successfully")
+        )
+})
+
 export {
     registerUser,
     loginUser,
@@ -350,4 +391,5 @@ export {
     refreshAccessToken,
     changeCurrentPassword,
     getCurrentUser,
+    updateAccountDetails
 };

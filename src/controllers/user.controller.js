@@ -278,4 +278,47 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 })
 
-export { registerUser, loginUser,logoutUser, refreshAccessToken };
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+    // TODO
+    // find login user
+    // get old and new password from body
+    // match old password
+    // set new password
+    // return response successfull
+    try {
+        const userId = req.user?._id;
+        const { oldPassword, newPassword } = req.body;
+        if (!oldPassword || !newPassword) {
+            console.log(" old and new passoerd required");
+            throw new ApiError(402, "old and new password required");
+        }
+        const user = await User.findById(userId);
+        if (!user) {
+            console.log("User not found");
+            throw new ApiError(400, "User not found");
+        }
+        const ispasswordCorrect = await user.isPasswordCorrect(oldPassword);
+        if (!ispasswordCorrect) {
+            console.log("Password mismatched");
+            throw new ApiError(401, "Password mismatched");
+        }
+        user.password = newPassword;
+        await user.save(); // check here if error occur because {validateBeforeSave:false} not using here
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    null,
+                    "Password changed successfully"
+                )
+            )
+
+    } catch (error) {
+        console.log("Error while change password",error);
+        throw new ApiError(402, "error while change password");
+    }
+})
+
+export { registerUser, loginUser,logoutUser, refreshAccessToken,changeCurrentPassword };

@@ -224,6 +224,26 @@ const logoutUser = asyncHandler(async (req, res) => {
         )
 });
 
+// fetch all register user
+const getAllUser = asyncHandler(async (req, res) => {
+    // TODO
+    // fetch all register user  from user model without password and refresh token
+    try {
+        // fetch all user
+        const allUser = await User.find().select("-password -refreshToken");
+        // return response
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(200, allUser, "All user fetch successfully")
+            );
+    } catch (error) {
+        console.log("Error while fetch all user details", error.message);
+        throw new ApiError(500, "Error while fetching all user");
+    }
+
+});
+
 const refreshAccessToken = asyncHandler(async (req, res) => {
     // TODO:
     // find refreshtoken from cookie or body
@@ -684,6 +704,7 @@ export {
     registerUser,
     loginUser,
     logoutUser,
+    getAllUser,
     refreshAccessToken,
     changeCurrentPassword,
     getCurrentUser,

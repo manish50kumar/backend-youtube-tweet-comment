@@ -321,4 +321,33 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     }
 })
 
-export { registerUser, loginUser,logoutUser, refreshAccessToken,changeCurrentPassword };
+const getCurrentUser = asyncHandler(async (req, res) => {
+    // TODO
+    // get user from auth
+    // check user exists or not
+    // return response
+
+    // get user from auth -> req.user
+    const user = req.user;
+    // check user exists or not
+    const checkUserExists = await User.findById(user._id);
+    if (!checkUserExists) {
+        console.log("User not exists");
+        throw new ApiError(400, "User not exists");
+    }
+    // return respose with user data here not send password and refreshToken
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, user, "Current user data fetched successfully")
+        )
+})
+
+export {
+    registerUser,
+    loginUser,
+    logoutUser,
+    refreshAccessToken,
+    changeCurrentPassword,
+    getCurrentUser,
+};

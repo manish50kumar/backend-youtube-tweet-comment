@@ -3,8 +3,11 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js"
 
 import { User } from "../models/user.model.js";
+import { Video } from "../models/video.model.js";
 import { deleteFileFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
+
 
 // function for generate access and refresh token 
 const generateAccessAndRefreshToken = async(userId) =>{
@@ -502,6 +505,110 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 });
 
+// get channel details where we are visiting this time 
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+    // TODO
+    // get channel id from params
+    // use mongoDB aggregate function for join and find details
+    // -> details like
+    //1.  total subscriber -> first find then count
+    //2. total subscribed channel by this channel -> fist find then count
+    //3. name , 4. avatar , 5. cover image , 6. username ,7. email , 
+    // 9. check are you subscribed or not? 
+    // 10. count total number of videos on this channel
+    // return response with detalis and total video 
+    
+    // get channel id from params
+    const channelId = req.params;
+    // validate this id, is correct mongodb id or not?
+    if (!mongoose.isValidObjectId(channelId)) {
+        console.log("channel id invalid");
+        throw new ApiError(400, "Invalid channel id");
+    }
+
+    // find all data using aggregate
+    const channel = await User.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(channelId),
+            },
+        },
+        {
+            $lookup: {  // first loockup for finding total subscribers
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers"
+            },
+        },
+        {
+            $lookup: { // total subscribed channel by this channel
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "subscribedTo"
+            },
+        },
+        {
+            $addFields: { // add sum extra for count total subscriber and total subscribedto
+                subscribersCount: {
+                    $size: "subscribers",
+                },
+                channelsSubscribedToCount: {
+                    $size: "subscribedTo",
+                },
+                isSubscribed: { // check current user subscribed this channel or not
+                    $cond: {
+                        if: {
+                            $in: [req.user?._id, "$subscribers.subscriber"]
+                        },
+                        then: true,
+                        else: false,
+                    },
+                },
+            },
+        },
+        {
+            $project: { // store the field which we need 
+                fullName: 1,
+                username: 1,
+                email: 1,
+                subscribersCount: 1,
+                channelsSubscribedToCount: 1,
+                isSubscribed: 1,
+                avatar: 1,
+                coverImage: 1,
+                
+            },
+        },
+
+    ]);
+
+    // check channel details
+    if (!channel?.length) {
+        console.log("Channel not found");
+        throw new ApiError(400,"Channel not found")
+    }
+
+    // now find total number of videos of this channel
+    const numberOfVideos = await Video.countDocuments({ owner: channelId });
+
+    // store hannel details and number of videos in ine variable
+    const cahnnelWithNumberOfVideos = {
+        ...channel[0],
+        numberOfVideos: numberOfVideos
+    };
+
+    // return response
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, cahnnelWithNumberOfVideos, "Channel profiles details fetched successfully")
+        );
+
+})
+
+
 export {
     registerUser,
     loginUser,
@@ -512,4 +619,5 @@ export {
     updateAccountDetails,
     updateUserAvatar,
     updateUserCoverImage,
+    getUserChannelProfile,
 };

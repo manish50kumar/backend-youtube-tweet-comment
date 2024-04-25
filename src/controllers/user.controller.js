@@ -446,6 +446,62 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
         );
 });
 
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // get cover image local file path
+    // get old cover image url
+    // upload new cover image 
+    // delete old cover image 
+    // update cover image url in database
+    // return response
+    
+    // get user id from  auth
+    const userId = req.user?._id;
+    // get new cover image path
+    const coverImageLocalPath = req.files?.path;
+
+    // check user exists
+    const userExists = await User.findById(userId);
+    if (!userExists) {
+        console.log("User does not exist");
+        throw new ApiError(400, "User does not exist");
+    }
+
+    // get old cover image url
+    const coverImageUrl = userExists?.coverImage;
+    // upload new cover image on cloudinary
+    const newCoverImage = await uploadOnCloudinary(coverImageLocalPath, process.env.FOLDER_NAME);
+    if (!newCoverImage.url) {
+        console.log("Error while upload cover image on cloudinary");
+        throw new ApiError(401, "Error while upload cover image on cloudinary");
+    } else {
+        // delete old cover image from cloudinary
+        const isdelete = await deleteFileFromCloudinary(coverImageUrl, false);
+        if (!isdelete) {
+            console.log("Error while delete old cover image from cloudinary");
+            throw new APiError(401, "Error while delete old cover image from cloudinary");
+        }
+    }
+    // update cover image url
+    const user = await User.findByIdAndUpdate(
+        userId,
+        {
+            $set: {
+                coverImage: newCoverImage?.secure_url
+            }
+        },
+        { new: true }
+    ).select("-password");
+    // return response
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, user, "Cover image update successfully")
+        );
+
+});
+
 export {
     registerUser,
     loginUser,
@@ -455,4 +511,5 @@ export {
     getCurrentUser,
     updateAccountDetails,
     updateUserAvatar,
+    updateUserCoverImage,
 };

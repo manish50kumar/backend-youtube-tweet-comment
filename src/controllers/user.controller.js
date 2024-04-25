@@ -3,7 +3,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js"
 
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deleteFileFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 
 // function for generate access and refresh token 
@@ -384,6 +384,68 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         )
 })
 
+const updateUserAvatar = asyncHandler(async (req, res) => {
+    //TODO
+    // get user from auth
+    // get avatar from temporary save using multer public/temp file
+    // get avatar link from user
+    // delete avatar from cloudinary
+    // upload new avatar on cloudinary
+    // update avatar link in database
+    // return successfull response
+
+    // get user from auth
+    const userId = req.user?._id;
+    // avatar local file path
+    const avatarLocalPath = req.files?.path;
+    if (!avatarLocalPath) {
+        console.log("Avatar path required");
+        throw new ApiError(400, "Avatar file is required");
+    }
+    // check user exist
+    const user = await User.findById(userId);
+    if (!user) {
+        console.log("User not exists");
+        throw new ApiError(400, "User does not exists");
+    }
+    // get avatar old link
+    const avatarLink = user?.avatar;
+    // upload new avatar on cloudinary
+    const avatar = await uploadOnCloudinary(avatarLocalPath, process.env.FOLDER_NAME);
+    if (!avatar.url) {
+        console.log("Error while upload file on cloudinary");
+        throw new ApiError(401, "Error while uploading avatar");
+    } else {
+        // if upload new avatar successfull then delete old avatar from cloudinary
+        const isdelete = await deleteFileFromCloudinary(avatarLink, false);
+        if (!isdelete) {
+            console.log("Error while delete avatar from cloudinary");
+            throw new ApiError(401, "Error while delete avatar from cloudinary");
+        }
+    }
+    // update avatar link in database
+    const updateUser = await User.findByIdAndUpdate(
+        userId,
+        {
+            $set: {
+                avatar: avatar?.secure_url
+            }
+        },
+        { new: true }
+    ).select("-password -refreshToken");
+
+    if (!updateUser) {
+        console.log('Error while update avatar');
+        throw new ApiError(401, "Error while update avatar");
+    }
+    // return response
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, updateUser, "Avatar update sucessfully")
+        );
+});
+
 export {
     registerUser,
     loginUser,
@@ -391,5 +453,6 @@ export {
     refreshAccessToken,
     changeCurrentPassword,
     getCurrentUser,
-    updateAccountDetails
+    updateAccountDetails,
+    updateUserAvatar,
 };

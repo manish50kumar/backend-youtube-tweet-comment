@@ -608,6 +608,77 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 
 })
 
+const getWatchHistory = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth 
+    // using mongo aggregate function find this fields
+    // 1. join with videos model and find total video id which is matched by user watchHistory
+    // 2. find owner name of videos
+    // return response
+    
+    // get user id from auth
+    const userId = req.user?._id;
+
+    // find watch history details
+    const userWatchHistory = await User.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(userId),
+            },
+        },
+        {
+            $lookup: {
+                from: "videos",
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                pipeline: [  // here we inside the video model that why we take ref from users
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: { // store details of owner of videos (history)
+                                        fullName: 1,
+                                        username: 1,
+                                        avatar: 1
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        $addFields: { // store all owner of videos history
+                            owner: {
+                                $first: "owner"
+                            },
+                        },
+                    },
+                ],
+            },
+        },
+    ]);
+
+    // validate watch history
+    if (!userWatchHistory) {
+        console.log("watch history does not fetch.");
+        throw new ApiError(400, "Watch history does not fetch ");
+    }
+    console.log("watch history : ", userWatchHistory); // check what is fetch in history
+    // return reponse
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                userWatchHistory[0].watchHistory,
+                "watch history data fetched successfully"
+            )
+        );
+});
 
 export {
     registerUser,

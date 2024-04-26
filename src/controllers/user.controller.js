@@ -937,6 +937,49 @@ const removeUser = asyncHandler(async (req, res) => {
     }
 });
 
+// Helper function for delete video and its related data
+async function deleteVideosAndRelatedData(videos) {
+    // TODO
+    // take all video id 
+    // delete all likes of each video
+    // extracts all comment and its like
+    // delete all comment and comment's likes of each video
+    // delete video and thumbnail from cloudinary
+    try {
+        // Extracts video ids
+        const videoIds = videos.map((video) => video._id);
+
+        // delete likes associated with videos
+        await Like.deleteMany({ video: { $in: videoIds } });
+
+        // find all comment of video
+        const comments = await Comment.find({ video: { $in: videoIds } });
+        // extracts comments ids
+        const commentIds = comments.map((comment) => comment._id);
+
+        // delete all like associated with comment
+        await Like.deleteMany({ comment: { $in: commentIds } });
+
+        // delete the comments
+        await Comment.deleteMany({ _id: { $in: commentIds } });
+
+        // delete videos , thumbnail, video link from mongoDB and its related data
+        await Promise.all(
+            videos.map(async (video) => {
+                await deleteFileFromCloudinary(video.videoFile, true);
+                await deleteFileFromCloudinary(video.thumbnail, false);
+                await Video.findByIdAndDelete(video._id);
+            })
+        );
+
+    } catch (error) {
+        console.log("Error while deleting videos and its related data",error.message);
+        throw error;
+    }
+}
+
+
+
 export {
     registerUser,
     loginUser,

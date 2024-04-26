@@ -1011,6 +1011,29 @@ async function deletePlaylistAndRelatedData(playlists) {
     }
 };
 
+// Helper function for delete comment and its related data
+async function deleteCommentAndRelatedData(comments) {
+    // TODO
+    // find comment id
+    // delete all like of this comment
+    // delete this comment
+    
+    try {
+        // find comment id 
+        const commentIds = comments.map((comment)=>comment._id);
+
+        // delete all the like of this comment
+        await Like.deleteMany({ comment: {$in:commentIds} });
+
+        // delete comment
+        // await Comment.findByIdAndDelete(commentId);
+        await Comment.deleteMany({ _id: { $in: commentIds } });
+    } catch (error) {
+        console.log("Error while delete comment and its related data : ", error.message);
+        throw error;
+    }
+}
+
 
 
 export {

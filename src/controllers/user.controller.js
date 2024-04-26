@@ -865,6 +865,77 @@ const getUserDetails = asyncHandler(async (req, res) => {
         );
 });
 
+// Remove user 
+const removeUser = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // check user exists or not
+    // delete all like and comment on tweet and after delete all tweets
+    // delete all videos -> for write a function for delete all video related data(comment,like)
+    // delete playlist and its related data -> write a function pass all playlist id
+    // delete all comment and elated data -> write a functon send all comment id
+    // delete all like of this user -> diect deleteMany mangoose model method
+    // delete all subscription -> write clean up function for this
+    // delete avatar and cover image from cloudinary
+    // delete user from database
+    // return successfull response
+
+    try {
+        //get user from auth
+        const userId = req.user?._id;
+        // check user exists
+        const userExists = await User.findById(userId);
+        if (!userExists) {
+            console.log("User not found");
+            throw new ApiError(400, "User not found");
+        }
+
+        // delete all likes associated with user's tweets
+        const userTweets = await Tweet.find({ owner: userId }, "_id");
+        const tweetsIds = userTweets.map((tweet) => tweet._id);
+        // delete all like 
+        await Like.deleteMany({ tweet: { $in: tweetsIds } });
+        // delete all tweet associated with user
+        await Tweet.deleteMany({ owner: userId });
+
+        // delete user's videos and related data
+        const videos = await Video.find({ owner: userId });
+        await deleteVideosAndRelatedData(videos);// function for delete videos and related data
+
+        // delete user's playlist and its related data
+        const playlists = await Playlist.find({ owner: userId });
+        await deletePlaylistAndRelatedData(playlists);// function for delete playlist and related data
+
+        // delete user's comment and its related data
+        const comments = await Comment.find({ owner: userId });
+        await deleteCommentAndRelatedData(comments);// function for delete comment and related data
+
+        // delete all like associated with user
+        await Like.deleteMany({ likedBy: userId });
+
+        // clean up subscriptions
+        await cleanupSubscriptions(userId); // function for delete subscriber and channel which is related by this user
+
+        // delete  user avatar and cover image form cloudinary
+        console.log("Avatar Url delete :", userExists.avatar);
+        console.log("Cver image Url delete :", userExists.coverImage);
+        // delete from cloudinary
+        await deleteFileFromCloudinary(userExists.avatar, false);
+        await deleteFileFromCloudinary(userExists.coverImage, false);
+
+        // finally delete the user
+        await User.findByIdAndDelete(userId);
+
+        // return response
+        return res
+            .status(200)
+            .json(200, null, "User removed successfully");
+            
+    } catch (error) {
+        console.log("Error while removing user", error.message);
+        throw new ApiError(402, "Error while removing user");
+    }
+});
 
 export {
     registerUser,
@@ -880,4 +951,5 @@ export {
     getUserChannelProfile,
     getWatchHistory,
     getUserDetails,
+    removeUser
 };

@@ -4,6 +4,12 @@ import { ApiError } from "../utils/apiError.js"
 
 import { User } from "../models/user.model.js";
 import { Video } from "../models/video.model.js";
+import { Tweet } from "../models/tweet.model.js";
+import { Comment } from "../models/comment.model.js";
+import { Like } from "../models/like.model.js";
+import { Playlist } from "../models/playlist.model.js";
+import { Subscription } from "../models/subscription.model.js";
+
 import { deleteFileFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
@@ -700,6 +706,166 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         );
 });
 
+const getUserDetails = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // get all details of user without password and refresh token
+    //fetch number of tweets and tweets array
+    // fetch number of comment and comment array
+    // fetch number of videos uploaded by user and videos array
+    // fetch number of playlist and  playlist array created by user
+    // fetch number of subscribers
+    // fetch channel which is subscribed by user
+    // fetch likes on users comment , tweet , videos
+    // group likes based on content (comment , tweet , video)
+    // constructed the final response with grouped likes
+    // prepare response object
+    // return response
+
+    // get user id from auth
+    const userId = req.user?._id;
+    // fetch all details without password and refresh token
+    const user = await User.findById(userId).select("-password -refreshToken");
+    // validate user
+    if (!user) {
+        console.log("User does not found");
+        throw new ApiError(400, "User does not found");
+    }
+
+    // fetch number of tweeets and tweet array
+    const tweetsCount = await Tweet.countDocuments({ owner: userId });
+    const tweets = await Tweet.find({ owner: userId });
+
+    // fetch number of comment and comment array
+    const commentsCount = await Tweet.countDocuments({ owner: userId });
+    const comments = await Tweet.find({ owner: userId });
+
+    // fetch number of videos and videos upload by user
+    const videosCount = await Video.countDocuments({ owner: userId });
+    const videos = await Video.find({ owner: userId });
+
+    // fetch number of playlist and playlist array created by user
+    const playlistsCount = await Playlist.countDocuments({ owner: userId });
+    const playlists = await Playlist.find({ owner: userId });
+
+    // fetch number of subscribers
+    const subscriptions = await Subscription.find({ channel: userId });
+    const subscriptionsCount = await subscriptions.length;
+
+    // fetch channel the user has subscribed to
+    const channelsSubscribed = await Subscription.find({ subscriber: userId });
+
+    // fetch like on user's comment , tweet , videos
+    const likesOnUserContent = await Like.find({
+        $or: [
+            { comment: { $in: comments.map((c) => c._id) } },
+            { tweet: { $in: tweets.map((t) => t._id) } },
+            { video: { $in: videos.map((v) => v._id) } },
+        ],
+    }).populate({
+        path: "comment",
+        select: "content owner",
+        populate: {
+            path: "owner",
+            select: "fullName",
+        },
+    }).populate({
+        path: "tweet",
+        select: "content owner",
+        populate: {
+            path: "owner",
+            select: "fullName",
+        },
+    }).populate({
+        path: "video",
+        select: "title owner",
+        populate: {
+            path: "owner",
+            select: "fullName",
+        },
+    }).populate(
+        "likedBy", "fullName"
+    ).select("-_id -__v -createdAt -updatedAt");
+
+    // Group likes based on content (comment , tweets , videos)
+    const groupedLikes = {};
+    likesOnUserContent.forEach((like) => {
+        const contentId =
+            like.comment ?
+                like.comment._id :
+                like.tweet ?
+                    like.tweet._id :
+                    like.video ?
+                        like.video._id :
+                        null;
+        // check content id
+        if (!contentId) {
+            return;
+        }
+        // if no like on this content then initilize empty array
+        if (!groupedLikes[contentId]) {
+            groupedLikes[contentId] = [];
+        }
+        // push all likes by on each content (video tweet comment)
+        groupedLikes[contentId].push(like.likeBy);
+    });
+
+    // construct the final response with grouped likes
+    const finalFormattedLikesOnUserContent = Object.entries(groupedLikes).map(
+        ([contentId, likedByArray]) => {
+            const likeObj = likesOnUserContent.find(
+                (like) => {
+                    (like.comment && like.comment._id.toString() === contentId) ||
+                        (like.tweet && like.tweet._id.toString() === contentId) ||
+                        (like.video && like.video._id.toString() === contentId)
+                }
+            );
+            return {
+                ...likeObj.toObject(), // convert mongoose object to plain object
+                likedBy: likedByArray,
+            };
+        }
+    );
+
+    // prepare the response object 
+    const userDetails = {
+        user: user,
+        comments: {
+            count: commentsCount,
+            data: comments
+        },
+        tweets: {
+            count: tweetsCount,
+            data: tweets,
+        },
+        videos: {
+            count: videosCount,
+            data: videos,
+        },
+        playlists: {
+            count: playlistsCount,
+            data: playlists,
+        },
+        subscriptions: {
+            subscriber: subscribersCount,
+            subscribedTo: channelsSubscribed,
+        },
+        likesOnUserContent: finalFormattedLikesOnUserContent,
+    };
+
+    // return response 
+    return res
+        .status(200)
+        .json(
+            new ApiRespone(
+                200,
+                userDetails,
+                "User details fetched successfully"
+            )
+        );
+});
+
+
 export {
     registerUser,
     loginUser,
@@ -713,4 +879,5 @@ export {
     updateUserCoverImage,
     getUserChannelProfile,
     getWatchHistory,
+    getUserDetails,
 };

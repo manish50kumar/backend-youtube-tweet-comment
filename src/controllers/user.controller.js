@@ -978,6 +978,39 @@ async function deleteVideosAndRelatedData(videos) {
     }
 }
 
+// helper function for delete playlist and its related data
+async function deletePlaylistAndRelatedData(playlists) {
+    // TODO
+    // Extract all playlis ids
+    //extract all video
+    // delete all video using function deleteVideoAndRelatedData
+    // delete playlist
+
+    try {
+        // extract all playlist ids
+        const playlistIds = playlists.map((playlist) => playlist._id);
+
+        // Retrieve videos associated with the playlists
+        const videos = await Video.find({ playlist: { $in: playlistIds } }); // check here if error occer
+        // here in video model no any playlist field check here if error occur
+
+        // Delete related data for all videos and delete video
+        // Delete related data for each video using Promise.all to ensure all deletions are completed in parallel
+        await Promise.all(
+            videos.map(async (video) => {
+                await deleteVideosAndRelatedData(video);
+            })
+        );
+
+        // delete the playlist themselves
+        await Playlist.deleteMany({ _id: { $in: playlistIds } });
+
+    } catch (error) {
+        console.log("Error while deleting playlist and its related data", error.message);
+        throw error;
+    }
+};
+
 
 
 export {

@@ -1034,7 +1034,23 @@ async function deleteCommentAndRelatedData(comments) {
     }
 }
 
+// Helper function for cleanup subscription
+async function cleanupSubscriptions(userId) {
+    // TODO
+    // delete all channel subscribe to
+    // delete all subscriber 
+    
+    try {
+        // find subscriptions where user is a subscriber and delete them
+        await Subscription.deleteMany({ subscriber: userId });
 
+        // find subscription where user is channel owner and delete them
+        await Subscription.deleteMany({ channel: userId });
+    } catch (error) {
+        console.log("Error while clean up subscription : ", error.message);
+        throw error;
+    }
+};
 
 export {
     registerUser,

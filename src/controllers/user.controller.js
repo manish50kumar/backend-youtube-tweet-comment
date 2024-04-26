@@ -750,7 +750,7 @@ const getUserDetails = asyncHandler(async (req, res) => {
 
     // fetch number of subscribers
     const subscriptions = await Subscription.find({ channel: userId });
-    const subscriptionsCount = await subscriptions.length;
+    const subscribersCount =  subscriptions.length;
 
     // fetch channel the user has subscribed to
     const channelsSubscribed = await Subscription.find({ subscriber: userId });

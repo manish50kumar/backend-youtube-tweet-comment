@@ -55,8 +55,55 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     }
 });
 
-
+// toggle comment like
+const toggleCommentLike = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // get comment id from params
+    // validate comment id
+    // check already like or not 
+    // if already like then unlike the comment
+    // else create new like and save it
+    
+    try {
+        // get user id
+        const userId = req.user?._id;
+        // get comment id from params
+        const commentId = req.params;
+        // validate comment id
+        if (!isValidObjectId(commentId)) {
+            console.log("Invalid comment id");
+            throw new APiError(400, "Invalid comment id");
+        }
+        // check comment exst or not
+        const commentExist = await Comment.findById({ _id: commentId });
+        if (!commentExist) {
+            console.log("Comment does not found");
+            throw new ApiError(400, "Comment not found");
+        }
+        // check already like or not
+        const alreadyLike = await Like.findByIdAndDelete({ comment: commentId, likedBy: userId });
+        if (alreadyLike) {
+            // if already like thn return a unlike response
+            return res
+                .status(200)
+                .json(new ApiResponse(200, null, "Comment Unlike Successfully"));
+        } else {
+            // if like not preasent then create a new like and save it
+            const newLike = new Like({ comment: commentId, likedBy: userId });
+            const saveLike = await newLike.save();
+            // return successfull like response
+            return res
+                .status(201)
+                .json(new ApiResponse(201, saveLike, "Comment liked successfully"));
+        }
+    } catch (error) {
+        console.log("Error while toggling comment like", error.message);
+        throw new ApiError(500, "Error While toggling comment like");
+    }
+})
 
 export {
     toggleVideoLike,
+    toggleCommentLike,
 }

@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { Tweet } from "../models/tweet.model.js";
 import { Like } from "../models/like.model.js";
 import { Comment } from "../models/comment.model.js";
+import { isValidObjectId } from "mongoose";
 
 
 // create tweet controller functionality
@@ -115,10 +116,78 @@ const getUserTweets = asyncHan(async (req, res) => {
     }
 });
 
+// update tweet 
+const updateTweet = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // get tweet id from params
+    // get update tweet content from body
+    // check valid tweet id
+    // find owner of tweet and convert it into toString() formet, match with user id (to_string()) formet
+    // update the content and save into database
+    // return response
+    
+    // get user id from auth
+    const userId = req.user?._id;
+    // get tweet id from params
+    const tweetId = req.params;
+    //get update tweet content from body
+    const { updatedContent } = req.body;
+    // validate tweet id from mongoose method isValidObjectId
+    if (!isValidObjectId(tweetId)) {
+        console.log("Invalid tweet id");
+        throw new ApiError(404, "Invalid Tweet id");
+    }
+    // validate content
+    if (!updatedContent) {
+        console.log("Update tweet content required");
+        throw new ApiError(404, "Update tweet content required");
+    }
+    // find tweet owner
+    const tweetOwner = await Tweet.findById(tweetId).select("owner");
+    if (!tweetOwner) {
+        console.log("Tweet owner ot found");
+        throw new ApiError(400, "Tweet Owner not found");
+    }
+    // match tweet owner id with user id
+    if (tweetOwner.owner.toString() !== userId.toString()) {
+        console.log("Unauthorized to tweet update, tweet owner and user not match ");
+        throw new ApiError(403, "Unauthorized to tweet update");
+    }
+
+    try {
+        // update tweet content
+        const updatedTweet = await Tweet.findByIdAndUpdate(
+            tweetId,
+            {
+                $set: {
+                    content: updatedContent
+                },
+            },
+            { new: true }
+        );
+        if (!updatedTweet) {
+            console.log("Tweet not update");
+            throw new ApiError(402,"Tweet not update")
+        }
+
+        // return response
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(201, updatedTweet, "Tweet content updated successfully")
+            );
+
+    } catch (error) {
+        console.log("Error while update tweet",error.message);
+        throw new ApiError(404, "Error while update tweet");
+    }    
+})
 
 export {
     createTweet,
     getUserTweets,
+    updateTweet,
 }
 
 

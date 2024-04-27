@@ -103,7 +103,57 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
     }
 })
 
+// toggle tweet like
+const toggleTweetLike = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // get tweet id from params
+    // validate tweet id
+    // check tweet exist or not
+    // check already like or not if yes then unlike it
+    // else create new like 
+
+    try {
+        // get user id from auth
+        const userId = req.user?._id;
+        // get tweet id from params
+        const tweetId = req.params;
+        // validate tweet id
+        if (!isValidObjectId(tweetId)) {
+            console.log("Invalid tweet id");
+            throw new ApiError(400, "Invalid tweet id");
+        }
+        // check tweet exist or not
+        const tweetExist = await Tweet.findById({ _id: tweetId });
+        if (!tweetExist) {
+            console.log("Tweet does not exist");
+            throw new ApiError(400, "Tweet does not exist");
+        }
+        // check already like or not
+        const alreadyLike = await Like.findOneAndDelete({ tweet: tweetId, likedBy: userId });
+        if (alreadyLike) {
+            // already like then return a unlike response
+            return res.status(200).json(new ApiResponse(200, null, "Tweet unliked successfull"));
+        } else {
+            // already not like
+            // then create a new like and save it
+            const newLike = new Like({ tweet: tweetId, likedBy: userId });
+            const saveLike = await newLike.save();
+            // return successfull like response
+            return res
+                .status(201)
+                .json(new ApiResponse(201, saveLike, "Tweet liked successfully"));
+        }
+
+    } catch (error) {
+        console.log("Error while toggling Tweet like");
+        throw new ApiError(500, "Erro while toggling Tweet Like");
+    }
+
+});
+
 export {
     toggleVideoLike,
     toggleCommentLike,
+    toggleTweetLike,
 }

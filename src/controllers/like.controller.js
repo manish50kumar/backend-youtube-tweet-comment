@@ -153,7 +153,7 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 });
 
 // get user liked videos
-const getUserLikedVideo = asyncHandler(async (req, res) => {
+const getUserLikedVideos = asyncHandler(async (req, res) => {
     // TODO
     // get user from auth
     // find all liked video and populate it to find video's owner
@@ -176,11 +176,11 @@ const getUserLikedVideo = asyncHandler(async (req, res) => {
                     select: "username fullName"
                 });
         // filtered liked video to store only video 
-        const filteredLikedVideo = likedVideos.filter(
+        const filteredLikedVideos = likedVideos.filter(
             (entry) => entry.video !== null && entry.video !== undefined);  // check here for &&
         
         // find the length if 0 then no any liked video
-        if (filteredLikedVideo.length === 0) {
+        if (filteredLikedVideos.length === 0) {
             return res
                 .status(200)
                 .json(new ApiResponse(200, null, "No Liked Videos Found"));
@@ -188,7 +188,7 @@ const getUserLikedVideo = asyncHandler(async (req, res) => {
         // return response
         return res
             .status(200)
-            .json(new ApiResponse(200, filteredLikedVideo, "Liked Videos retrived successfully"));
+            .json(new ApiResponse(200, filteredLikedVideos, "Liked Videos retrived successfully"));
     } catch (error) {
         console.log("Error while get user liked videos");
         throw new ApiError("Error while get user's liked videos");
@@ -196,9 +196,55 @@ const getUserLikedVideo = asyncHandler(async (req, res) => {
 
 });
 
+// get user liked comments
+const getUserLikedComments = asyncHandler(async (req, res) => {
+    // TODO
+    // get user from auth
+    // find all liked comment and populate it to find comment's owner
+    // check if user not like any comment then return not liked comment response
+
+    try {
+        // get user id from auth
+        const userId = req.user?._id;
+        // find all liked  and populate comment for comment like
+        const likedComments = await
+            Like.find({ likedBy: userId })
+                .populate({
+                    path: "comment", // found only comment details of like
+                    populate: {
+                        path: "owner",
+                        select: "username fullName"
+                    }
+                }).populate({
+                    path: "likedBy",
+                    select: "username fullName"
+                });
+        // filtered liked comment to store only comment 
+        const filteredLikedComments = likedVideos.filter(
+            (entry) => entry.comment !== null && entry.comment !== undefined);  // check here for &&
+
+        // find the length if 0 then no any liked comment
+        if (filteredLikedComments.length === 0) {
+            return res
+                .status(200)
+                .json(new ApiResponse(200, null, "No Liked Comment Found"));
+        }
+        // return response
+        return res
+            .status(200)
+            .json(new ApiResponse(200, filteredLikedComments, "Liked Comment retrived successfully"));
+    } catch (error) {
+        console.log("Error while get user liked comments");
+        throw new ApiError("Error while get user's liked comments");
+    }
+
+});
+
+
 export {
     toggleVideoLike,
     toggleCommentLike,
     toggleTweetLike,
-    getUserLikedVideo,
+    getUserLikedVideos,
+    getUserLikedComments,
 }

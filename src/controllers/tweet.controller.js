@@ -184,10 +184,63 @@ const updateTweet = asyncHandler(async (req, res) => {
     }    
 })
 
+//delete tweet
+const deleteTweet = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // get tweet id from params
+    // find owner of tweet and match with convert toString()
+    // delete all likes of this tweet
+    // delete all comment of this tweet
+    // delete tweet
+    // return successfull response 
+    
+    // get user id 
+    const userId = req.user?._id;
+    // get tweet id
+    const tweetId = req.params;
+    try {
+        // find owner of this tweet
+        const tweetOwner = await Tweet.findById(tweetId).select("owner");
+        if (!tweetOwner) {
+            console.log("Tweet not found");
+            throw new ApiError(400, "Tweet not found");
+        }
+        // match tweet owner with user id
+        if (tweetOwner.owner.toString() !== userId.toString()) {
+            console.log("Unauthorized to delete tweet");
+            throw new ApiError(404, "UnAuthorized to delete tweet");
+        }
+
+        // delete all likes of this tweet
+        await Like.deleteMany({ tweet: tweetId });
+
+        // delete comments of this tweet
+        await Comment.deleteMany({ tweet: tweetId });
+
+        // delete tweet
+        const deleteTweet = await Tweet.findByIdAndDelete(tweetId);
+        if (!deleteTweet) {
+            console.log("tweet not found or delete");
+            throw new ApiError(405, "tweet not found or delete");
+        }
+        // return response
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(200, null, "Tweet delete successfully")
+            );
+    } catch (error) {
+        console.log("Error while delete tweet: ", error.message);
+        throw new ApiError(500, "Error while delete tweet");
+    }
+});
+
 export {
     createTweet,
     getUserTweets,
     updateTweet,
+    deleteTweet,
 }
 
 

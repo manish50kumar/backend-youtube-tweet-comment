@@ -220,7 +220,7 @@ const getUserLikedComments = asyncHandler(async (req, res) => {
                     select: "username fullName"
                 });
         // filtered liked comment to store only comment 
-        const filteredLikedComments = likedVideos.filter(
+        const filteredLikedComments = likedComments.filter(
             (entry) => entry.comment !== null && entry.comment !== undefined);  // check here for &&
 
         // find the length if 0 then no any liked comment
@@ -241,10 +241,56 @@ const getUserLikedComments = asyncHandler(async (req, res) => {
 });
 
 
+// get user liked tweets
+const getUserLikedTweets = asyncHandler(async (req, res) => {
+    // TODO
+    // get user from auth
+    // find all liked tweet and populate it to find tweet's owner
+    // check if user not like any tweet then return not liked tweet response
+
+    try {
+        // get user id from auth
+        const userId = req.user?._id;
+        // find all liked  and populate tweet for tweet like
+        const likedTweets = await
+            Like.find({ likedBy: userId })
+                .populate({
+                    path: "tweet", // found only tweet details of like
+                    populate: {
+                        path: "owner",
+                        select: "username fullName"
+                    }
+                }).populate({
+                    path: "likedBy",
+                    select: "username fullName"
+                });
+        // filtered liked comment to store only comment 
+        const filteredLikedTweets = likedTweets.filter(
+            (entry) => entry.tweet !== null && entry.tweet !== undefined);  // check here for &&
+
+        // find the length if 0 then no any liked tweet
+        if (filteredLikedTweets.length === 0) {
+            return res
+                .status(200)
+                .json(new ApiResponse(200, null, "No Liked Tweet Found"));
+        }
+        // return response
+        return res
+            .status(200)
+            .json(new ApiResponse(200, filteredLikedTweets, "Liked Tweet retrived successfully"));
+    } catch (error) {
+        console.log("Error while get user liked tweets");
+        throw new ApiError("Error while get user's liked tweets");
+    }
+
+});
+
+
 export {
     toggleVideoLike,
     toggleCommentLike,
     toggleTweetLike,
     getUserLikedVideos,
     getUserLikedComments,
+    getUserLikedTweets
 }

@@ -236,11 +236,138 @@ const deleteTweet = asyncHandler(async (req, res) => {
     }
 });
 
+// getAllTweet 
+const getAllTweets = asyncHandler(async (req, res) => {
+    // TODO
+    // Find tweets
+    // For each tweet, find its likes and owner information.
+    // Create a new structure for each tweet that includes:
+    // Tweet content and creation time.
+    //  Owner's ID and full name.
+    // Number of likes for the tweet.
+    // Usernames of users who liked the tweet.
+    // Number of comment for the tweet
+    // name of users and comment content who comment on the tweet
+
+    try {
+        const allTweetWithLikesAndComments = await Tweet.aggregate([
+            {
+                $lookup: {
+                    from: "likes",
+                    localField: "_id",
+                    foreignField: "tweet",
+                    as: "likes"
+                },
+            },
+            {
+                $lookup: {
+                    from: "comments",
+                    localField: "_id",
+                    foreignField: "tweet",
+                    as: "comments"
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "owner",
+                    foreignField: "_id",
+                    as: "ownerDetails"
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    content: 1,
+                    owner: {
+                        _id: "owner", // rename d to match the owner id in users collection
+                        fullName: { $arrayElemAt: ["$ownerDetails.fullName", 0] } // Extract the full name from ownerDetails array
+                    },
+                    createdAt: 1,
+                    likes: {
+                        $map: {
+                            input: "likes",
+                            as: "like",
+                            in: "$$like.likedBy"
+                        }
+                    },
+                    comments: {  // we can fetch this in comment controller
+                        $map: {
+                            input: "comments",
+                            as: "comment",
+                            in: "$$comments.owner"
+                        }
+                    },
+                    commentsContent: {
+                        $map: {
+                            input: "comments",
+                            as: "commentContent",
+                            in: "$$comment.content",
+                        },
+                    },
+                },
+               
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "likes",
+                    foreignField: "_id",
+                    as: "likedBy"
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "comments",
+                    foreignField: "_id",
+                    as: "commentBy"
+                },
+            },
+            {
+                $proect: {
+                    _id: 1,
+                    content: 1,
+                    owner: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    numberOfLikes: { $size: "likes" },
+                    likedBy: {
+                        _id: 1,
+                        fullName: 1,
+                    },
+                    numberOfComment: { $size: "comments" },
+                    comment: {
+                        _id: 1,
+                        fullname: 1,
+                        content: 1,
+                    }
+                }
+            }
+        ]);
+        
+        // return response
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    allTweetWithLikesAndComments,
+                    "All tweet fetched succeffuly")
+            );
+    } catch (error) {
+        console.log("Error while fetching all tweet", error.message);
+        throw new ApiError(500, "Error while fetching All tweet");
+    }
+
+});
+
 export {
     createTweet,
     getUserTweets,
     updateTweet,
     deleteTweet,
+    getAllTweets,
 }
 
 

@@ -152,8 +152,53 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 
 });
 
+// get user liked videos
+const getUserLikedVideo = asyncHandler(async (req, res) => {
+    // TODO
+    // get user from auth
+    // find all liked video and populate it to find video's owner
+    // check if user not like any video then return not liked video response
+
+    try {
+        // get user id from auth
+        const userId = req.user?._id;
+        // find all liked  and populate video for video like
+        const likedVideos = await
+            Like.find({ likedBy: userId })
+                .populate({
+                    path: "video", // found only video details of like
+                    populate: {
+                        path: "owner",
+                        select: "username fullName"
+                    }
+                }).populate({
+                    path: "likedBy",
+                    select: "username fullName"
+                });
+        // filtered liked video to store only video 
+        const filteredLikedVideo = likedVideos.filter(
+            (entry) => entry.video !== null && entry.video !== undefined);  // check here for &&
+        
+        // find the length if 0 then no any liked video
+        if (filteredLikedVideo.length === 0) {
+            return res
+                .status(200)
+                .json(new ApiResponse(200, null, "No Liked Videos Found"));
+        }
+        // return response
+        return res
+            .status(200)
+            .json(new ApiResponse(200, filteredLikedVideo, "Liked Videos retrived successfully"));
+    } catch (error) {
+        console.log("Error while get user liked videos");
+        throw new ApiError("Error while get user's liked videos");
+    }
+
+});
+
 export {
     toggleVideoLike,
     toggleCommentLike,
     toggleTweetLike,
+    getUserLikedVideo,
 }

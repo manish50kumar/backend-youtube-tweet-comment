@@ -317,10 +317,48 @@ const deleteVideo = asyncHandler(async (req, res) => {
     }
 });
 
+// toggle published status of a video 
+const togglePublishStatus = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // get video id from params
+    // find video details
+    // match video owner with user
+    // update pulished status
+    // save in database
+    // return response
+
+    // get user id from auth
+    const userId = req.user.id;
+    // get video id from params
+    const videoId = req.params;
+    if (!videoId.trim() || !isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid video id");
+    }
+    // find video details
+    const video = await Video.findById(videoId);
+    if (!video) {
+        throw new ApiError(400, "Video not found");
+    }
+    // match video owner with user
+    if (video.owner.toString() !== userId.toString()) {
+        throw new ApiError(402, "You are not owner of this video");
+    }
+    // toggle the status of isPublished video
+    video.isPublished = !video.isPublished;
+    const updateVideo = video.save();
+
+    // return response 
+    return res
+        .status(200)
+        .json(new ApiResponse(200, updateVideo, " Toggle Publish status successfully"));
+})
+
 export {
     getAllVideos,
     publishAVideo,
     getVideoById,
     updateVideoDetails,
-    deleteVideo
+    deleteVideo,
+    togglePublishStatus
 }

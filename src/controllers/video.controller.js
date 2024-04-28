@@ -248,9 +248,79 @@ const updateVideoDetails = asyncHandler(async (req, res) => {
         );
 });
 
+// deleteVideo
+const deleteVideo = asyncHandler(async (req, res) => {
+    // TODO
+    // get user from auth
+    // get video id from params
+    // match video owner with user
+    // delete all likes of this video
+    // find all comment and after find all comment like then delete comment and like
+    //remove video from all user watch history
+    // remove video from playlist
+    // delete video and thumbnail from cloudinary
+    // delete all details from database
+
+    // get user from auth
+    const userId = req.user._id;
+    // get video id from params
+    const videoId = req.params;
+    // validate video id 
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid video id");
+    }
+    // find video with all details 
+    const video = await Video.findById(videoId);
+    if (!video) {
+        throw new APiError(400, "Video not found");
+    }
+    if (video.owner.toString() !== userId.toString()) {
+        throw new ApiError(401, "you are not owner of this video");
+    }
+    
+    try {
+        // find all video likes and delete it
+        await Like.deleteMany({ video: videoId });
+
+        // find all comment associated with the video
+        const comments = await Comment.find({ video: videoId });
+        const commentIds = comments.map((comment) => comment._id);
+        // delete all like on these comments
+        await Like.deleteMany({ comment: { $in: commentIds } });
+        // delete all comment
+        await Comment.deleteMany({ video: videoId });
+
+        // delete from playlist
+        await Playlist.updateMany(
+            { videos: videoId },
+            { $pull: { videos: videoId } }
+        );
+        // delete from user's watch history
+        await User.updateMany(
+            { watchHistory: videoId },
+            { $pull: { watchHistory: videoId } }
+        );
+        // delete videos and thumbnail from cloudinary
+        await deleteFileFromCloudinary(video.videoFile, true);
+        await deleteFileFromCloudinary(video.thumbnail, false);
+
+        // delete video from database with all details
+        await Video.findByIdAndDelete(videoId);
+        // return respone
+        return res
+            .status(200)
+            .json(new ApiResponse(200, null, "video deleted successfully"));
+
+    } catch (error) {
+        console.log("Error while deleting video", error);
+        throw new ApiError(400, "Error while deleting a video");
+    }
+});
+
 export {
     getAllVideos,
     publishAVideo,
     getVideoById,
     updateVideoDetails,
+    deleteVideo
 }

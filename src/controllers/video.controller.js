@@ -189,8 +189,68 @@ const getVideoById = asyncHandler(async (req, res) => {
 
 });
 
+// update video
+const updateVideoDetails = asyncHandler(async (req, res) => {
+    // TODO
+    // update video details like title , description , thumbnail
+    // get video from params
+    // match video owner
+    // delete old thumbnail from cloudinary
+    // upload new thumbnail on cloudinary
+
+    // get user id from auth
+    const userId = req.user.id;
+    // get video id
+    const videoId = req.params;
+    const { title, description } = req.body;
+    const thumbnailLocalPath = req.files?.path;
+
+    if (isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid video id");
+    }
+
+    if (!title || !description) {
+        throw new ApiError(400, "title and description are required");
+    }
+    // find video owner
+    const videoOwner = await Video.findById(videoId).select("owner thumbnail").exec();
+    if (!videoOwner || videoOwner.owner.toString() !== userId.toString()) {
+        throw new ApiError(400, "You are not owner of this video");
+    }
+    let thumbnail;
+    if (thumbnailLocalPath) {
+        await deleteFileFromCloudinary(videoOwner.thumbnail, false);
+        thumbnail = await uploadOnCloudinary(thumbnailLocalPath, process.env.FOLDER_NAME);
+        if (!thumbnail.secure_url) {
+            throw new ApiError(400, "Error while upload thumbnail on cloudinary");
+        }
+        thumbnail = thumbnail.secure_url;
+    } else {
+        thumbnail = videoOwner.thumbnail;
+    }
+    // update video details
+    const videoDetails = await Video.findByIdAndUpdate(
+        videoId,
+        {
+            $set: {
+                title: title,
+                description: description,
+                thumbnail: thumbnail
+            }
+        }
+    );
+
+    // return response
+    return res
+        .status(201)
+        .json(
+            new ApiResponse(201, videoDetails, "video details update successfully")
+        );
+});
+
 export {
     getAllVideos,
     publishAVideo,
     getVideoById,
+    updateVideoDetails,
 }

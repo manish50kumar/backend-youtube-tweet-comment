@@ -7,6 +7,7 @@ import { Video } from "../models/video.model.js";
 import { Comment } from "../models/comment.model.js";
 import { Like } from "../models/like.model.js";
 import { Playlist } from "../models/playlist.model.js";
+import { uploadOnCloudinary, deleteFileFromCloudinary } from "../utils/cloudinary.js";
 
 
 // get all videos
@@ -64,8 +65,65 @@ const getAllVideos = asyncHandler(async (req, res) => {
         );
 });
 
+// publish a video
+const publishAVideo = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // get title , description from body
+    // get video and thumbnail and upload on cloudinary
+    // create a video database model
+    // return response
 
+    // get user id from auth
+    const userId = req.user._id;
+    // get title and description from body
+    const { title, description } = req.body;
+    if (!title || !description) {
+        console.log("title and description required");
+        throw new ApiError(400, "title and description required");
+    }
+
+    // get video and thumbnail file local path
+    // const videoFileLocalPath = req.files?.videoFile[0]?.path;
+    const videoFileLocalPath = req.files?.videoFile;
+    const thumbnailLocalPath = req.files?.thumbnail;
+    if (!videoFileLocalPath || !thumbnailLocalPath) {
+        console.log("video and thumnail paths are required");
+        throw new ApiError(400, "video and thumbnail paths are required");
+    }
+    // upload on cloudinary
+    const videoFile = await uploadOnCloudinary(videoFileLocalPath, process.env.FOLDER_NAME);
+    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath, process.env.FOLDER_NAME);
+    if (!videoFile) {
+        throw new ApiError(403, "Error while video upload on cloudinary");
+    }
+    if (!thumbnail) {
+        throw new ApiError(403, "Error while thumbnail upload on cloudinary");
+    }
+    // find duration on video
+    const videoDuration = videoFile.duration;
+    const video = await Video.create({
+        title,
+        description,
+        videoFile: videoFile.secure_url,
+        thumbnail: thumbnail.secure_url,
+        duration: videoDuration,
+        owner: userId
+    });
+    if (!video) {
+        console.log("Error while save data on datadase");
+        throw new ApiError("Error while save data on database");
+    }
+    // return response
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, video, "video published successfully")
+        );
+
+});
 
 export {
     getAllVideos,
+    publishAVideo,
 }

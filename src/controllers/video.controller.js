@@ -123,7 +123,74 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
 });
 
+
+// get video by video id
+const getVideoById = asyncHandler(async (req, res) => {
+    // TODO
+    // get userID from auth
+    // get video id from params
+    // find video like and comment
+    // add user watch history
+    // increase views number by in video view
+    // return response
+
+    // get user id fro auth
+    const userId = req.user._id;
+    // get video id from params
+    const videoId = req.params;
+    if (isValidObjectId(videoId)) {
+        throw new ApiError(400, "invalid video id");
+    }
+    // find video and populate name and username of owner 
+    const video = await Video.findById(videoId)
+        .populate({
+            path: "owner",
+            select: "fullName username"
+        });
+    if (!video) {
+        throw new ApiError("Video not found");
+    }
+    // find like and comment on this video
+    const numberOfLikes = await Like.countDocuments({ video: videoId });
+    const numberOfComment = await Comment.countDocuments({ video: videoId });
+
+    // update watch history of user
+    await User.findByIdAndUpdate(
+        userId,
+        {
+            $addToSet: { watchHistory: videoId }
+        },
+        { new: true }
+    );
+
+    // update video view
+    await Video.findByIdAndUpdate(
+        videoId,
+        {
+            $inc: { views: 1 }
+        },
+        { new: true }
+    );
+    // store number of likes and comment with video object
+    const videoWithNumberOfLikesAndComments = {
+        ...video.toObject(),
+        numberOfLikes,
+        numberOfComment
+    };
+    // return response
+    return res
+        .status(201)
+        .json(
+            new ApiResponse(
+                201,
+                videoWithNumberOfLikesAndComments,
+                "found video from id successfully")
+        );
+
+});
+
 export {
     getAllVideos,
     publishAVideo,
+    getVideoById,
 }

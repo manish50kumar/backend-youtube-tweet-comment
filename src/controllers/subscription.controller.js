@@ -106,8 +106,56 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     }
 });
 
+//get subscriberd channel list of this user
+const getSubscribedChannels = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // find all channel which is subscribed by user
+    // return response
+
+    // get userid from auth
+    const userId = req.user._id;
+    // find all channel
+    try {
+        const subscribedChannels = await Subscription.find({
+            subscriber: userId
+        }).populate({
+            path: "channel",
+            select: "-email -password -createdAt updatedAt -__v -watchHistory"
+        });
+        if (!subscribedChannels) {
+            return res
+                .status(200)
+                .json(
+                    new ApiResponse(
+                        200,
+                        0,
+                        "You have not subscribed any channel"
+                    )
+                );
+        }
+        // extract channel details 
+        const channelLists = subscribedChannels.map((subscription) => subscription.channel);
+        // return response
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    channelLists,
+                    "subscribed channels found"
+                )
+            );
+    } catch (error) {
+        console.log("Error while fetching details of subscribed channels");
+        throw new ApiError(400, "Error while fetching subscribed channels");
+    }
+});
+
+
 export {
     toggleSubscription,
     getUserChannelSubscribers,
+    getSubscribedChannels
 }
 

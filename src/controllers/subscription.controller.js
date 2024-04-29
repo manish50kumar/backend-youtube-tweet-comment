@@ -57,8 +57,57 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     }
 });
 
+// get user's channel subscribers list
+const getUserChannelSubscribers = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // get channel id from params
+    // check only user can see only own channel's subscriber list
+    // find all subscriber
+    // return response 
+
+    // get user id from auth
+    const userId = req.user._id;
+    // get channel from params
+    const channelId = req.params;
+    if (!isValidObjectId(channelId)) {
+        throw new ApiError(400, "Invalid channel id");
+    }
+    if (channelId.toString() !== userId.toString()) {
+        throw new ApiError(400, "You are not authorized to see subscriber's list");
+    }
+    try {
+        // find all subscriber's list
+        const subscribers = await Subscription.find({ channel: userId }).
+            populate({
+                path: "subscriber",
+                select: "fullName username"
+            });
+        
+        if (!subscribers) {
+            return res.status(200).json(new ApiResponse(200, 0, "you have not subscriber"));
+        }
+        // extract subscribers list
+        const subscribersList = subscribers.map((sub) => sub.subscriber);
+        // return list of this channel's subscriber
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    subscribersList,
+                    "subscriber's list found of this channel"
+                )
+            );
+
+    } catch (error) {
+        console.log("Error while fetching subscriber's list of this channel");
+        throw new ApiError(500, "Error while fetching subscriber's list of this channel");
+    }
+});
 
 export {
     toggleSubscription,
+    getUserChannelSubscribers,
 }
 

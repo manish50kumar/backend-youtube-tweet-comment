@@ -50,10 +50,42 @@ const createPlaylist = asyncHandler(async (req, res) => {
     }
 });
 
-
+// getUserplaylist
+const getUserplaylists = asyncHandler(async (req, res) => {
+    // TODO
+    // get user from params
+    // find all playlist of this user
+    // return response
+    try {
+        // get user from params
+        const userId = req.params;
+        if (!isValidObjectId(userId)) {
+            throw new ApiError(404, "Invalid User id");
+        }
+        const playlists = await Playlist({ owner: userId }).populate(
+            {
+                path: "videos",
+                select: "-owner -createdAt -updatedAt -__v"
+            }
+        );
+        if (!playlists) {
+            throw new ApiError(404, "Playlists have not found");
+        }
+        // return response
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(200, playlists, "Playlists found successfully")
+            );
+    } catch (error) {
+        console.log("Error while finding user's playlist");
+        throw new APiError(404, "Error while finding user's playlist");
+    }
+});
 
 
 export {
     createPlaylist,
+    getUserplaylists,
 }
 

@@ -280,6 +280,69 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     }
 });
 
+// update playlist
+const updatePlaylist = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // get playlist id from params
+    // get name , description from body
+    // match playlist owner with user
+    // update details
+    // return response
+
+    try {
+        // get user id from auth
+        const userId = req.user._id;
+        // get playlist id from params
+        const playlistId = req.params;
+        // get new name , description from body
+        const { name, description } = req.body;
+        // validate playlist id
+        if (!isValidObjectId(playlistId)) {
+            throw new ApiError(400, "Invalid Playlist id");
+        }
+        // vaildate name & description
+        if (!name || !description) {
+            throw new ApiError(400, "Name and Description required");
+        }
+        // find playlist owner and match with user
+        const playlist = await Playlist.findById(playlistId).select("owner");
+        if (!playlist) {
+            throw new ApiError(400, "playlist not found");
+        }
+        if (playlist.owner.toString() !== userId.toString()) {
+            throw new ApiError(402, "You are not authorize to update this playlist");
+        }
+        // update playlist
+        const updatedPlaylist = await Playlist.findByIdAndUpdate(
+            playlistId,
+            {
+                $set: {
+                    name: name,
+                    description: description
+                }
+            },
+            { new: true }
+        );
+        if (!updatedPlaylist) {
+            throw new ApiError(404, "playlist not update");
+        }
+        // return response
+        return res
+            .status(201)
+            .json(
+                new ApiResponse(
+                    201,
+                    updatedPlaylist,
+                    "playlist updated successfully"
+                )
+            );
+    } catch (error) {
+        console.log("Error while updating playlist: ", error.message);
+        throw new ApiError(500, "Error while updating playlist");
+    }
+});
+
 export {
     createPlaylist,
     getUserplaylists,
@@ -287,5 +350,6 @@ export {
     addVideoToPlaylist,
     removeVideoFromPlaylist,
     deletePlaylist,
+    updatePlaylist
 }
 

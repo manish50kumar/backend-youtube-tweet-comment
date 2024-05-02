@@ -83,9 +83,43 @@ const getUserplaylists = asyncHandler(async (req, res) => {
     }
 });
 
+// get laylist by id
+const getPlaylistById = asyncHandler(async (req, res) => {
+    // TODO
+    // get playlist from params
+    // find playlist
+    // return response
+
+    try {
+        // get playlist from params
+        const playlistId = req.params;
+        if (!isValidObjectId(playlistId)) {
+            throw new ApiError(400, "Invalid playlist id");
+        }
+        // find playlist
+        const playlist = await Playlist.findById(playlistId).populate(
+            {
+                path: "videos"
+            }
+        );
+        if (!playlist) {
+            throw new APiError(400, "Playlist not found");
+        }
+        // return response
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(200, playlist, "Playlist found successfully")
+            );
+    } catch (error) {
+        console.log("Error while find playlist by id");
+        throw new ApiResponse("Error while find playlist by id");
+    }
+});
 
 export {
     createPlaylist,
     getUserplaylists,
+    getPlaylistById,
 }
 

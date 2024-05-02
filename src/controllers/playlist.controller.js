@@ -181,10 +181,67 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     }
 });
 
+// remove video from playlist
+const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // get video id and playlist id from params
+    // match playlist owner and video owner with user for authorize
+    // remove video from playlist
+    // return response
+
+    try {
+        // get user id from auth
+        const userId = req.user._id;
+        // get video id nad playlist id from params
+        const { videoId, playlistId } = req.params;
+        if (!isValidObjectId(videoId)) {
+            throw new ApiError(404, "Invalid Video id");
+        }
+        if (!isValidObjectId(playlistId)) {
+            throw new ApiError(404, "Invalid Playlist id");
+        }
+        // playlist exist and owner match
+        const playlist = await Playlist.findById(playlistId).select("owner");
+        if (!playlist) {
+            throw new ApiError(400, "playlist not found");
+        }
+        if (playlist.owner.toString() !== userId.toString()) {
+            throw new ApiError(403, "You are not authorize to remove video");
+        }
+        
+        // remove video from playlist 
+        const updatedPlaylist = await Playlist.findByIdAndUpdate(
+            playlistId,
+            {
+                $pull: { videos: videoId }
+            },
+            { new: true }
+        );
+        if (!updatedPlaylist) {
+            throw new ApiError(400, "video is not removed from playlist");
+        }
+        // return response
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    updatedPlaylist,
+                    "Video removed successfully"
+                )
+            );
+    } catch (error) {
+        console.log("Error while remove video from this playlist");
+        throw new ApiError(500, "Error while remving video from playlist");
+    }
+});
+
 export {
     createPlaylist,
     getUserplaylists,
     getPlaylistById,
     addVideoToPlaylist,
+    removeVideoFromPlaylist,
 }
 

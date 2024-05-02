@@ -237,11 +237,55 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     }
 });
 
+// delete playlist
+const deletePlaylist = asyncHandler(async (req, res) => {
+    // TODO
+    // get user id from auth
+    // get playlist from params
+    // match owner of this playlist with user
+    // delete playlist
+    // return response
+
+    try {
+        // get user id from auth
+        const userId = req.user._id;
+        // get playlist from params
+        const playlistId = req.params;
+        if (!isValidObjectId(playlistId)) {
+            throw new ApiError(400, "Invalid playlist ID");
+        }
+        // find playlist owner and match
+        const playlistOwner = await Playlist.findById(playlistId).select("owner");
+        if (!playlistOwner) {
+            throw new ApiError(400, "playlist not found");
+        }
+        // match owner with user
+        if (playlistOwner.owner.toString() !== userId.toString()) {
+            throw new ApiError(402, "You are authorize to delete playlist");
+        }
+        // delete playlist
+        const deletedPlaylist = await Playlist.findByIdAndDelete(playlistId);
+        if (!deletedPlaylist) {
+            throw new ApiError("playlist not deleted");
+        }
+        // return response
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(200, null, "playlist delete successfully")
+            );
+    } catch (error) {
+        console.log("Error while delete playlist : ", error.massage);
+        throw new ApiError(500, "Error while delete playlist");
+    }
+});
+
 export {
     createPlaylist,
     getUserplaylists,
     getPlaylistById,
     addVideoToPlaylist,
     removeVideoFromPlaylist,
+    deletePlaylist,
 }
 

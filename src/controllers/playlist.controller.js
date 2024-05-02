@@ -4,6 +4,7 @@ import { Video } from "../models/video.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
+import { response } from "express";
 
 // create playList
 const createPlaylist = asyncHandler(async (req, res) => {
@@ -117,9 +118,73 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     }
 });
 
+// add video to playlist
+const addVideoToPlaylist = asyncHandler(async (req, res) => {
+    // TODO
+    // get video id , playlist id from params
+    // get user id from auth
+    // compare playlist owner and userid for authorize
+    // check video and playlist exist
+    // update playlist to push video id in playlist's videos
+    // return response
+
+    try {
+        // get user id from auth
+        const userId = req.user._id;
+        // get video id , playlist id from params
+        const { videoId, playlistId } = req.params;
+        // validate ids
+        if (!isValidObjectId(videoId)) {
+            throw new ApiError(400, "Invalid video id");
+        }
+        if (!isValidObjectId(playlistId)) {
+            throw new ApiError(400, "Invalid playlist id");
+        }
+        // check playList exist
+        const playlist = await Playlist.findById(playlistId).select("owner");
+        if (!playlist) {
+            throw new ApiError(400, "Playlist does not exist");
+        }
+        if (playlist.owner.toString() !== userId.toString()) {
+            throw new ApiError(403, "You are not authorize to add video in this playlist");
+        }
+        // check video exist
+        const video = await Video.findById(videoId);
+        if (!video) {
+            throw new ApiError(400, "video does not exist");
+        }
+        // update playlist to push video
+        const updatedPlaylist = await Playlist.findByIdAndUpdate(
+            playlistId,
+            {
+                $addToSet: { videos: videoId }
+            },
+            { new: true }
+        );
+        if (!updatedPlaylist) {
+            throw new ApiErrro(400, "video is not added in this playlist")
+        }
+        // return response
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    updatedPlaylist,
+                    "video is added in this playlist successfully"
+                )
+            );
+
+    } catch (error) {
+        console.log("Error while add video in this playlist");
+        throw new ApiError(400, "Error while add video in this playlist");
+    }
+});
+
 export {
     createPlaylist,
     getUserplaylists,
     getPlaylistById,
+    addVideoToPlaylist,
 }
 
